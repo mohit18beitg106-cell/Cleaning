@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>House Cleaning Schedule</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--text:#1c2733;--muted:#66758a;--line:#e2e8f0;--accent:#2f7cf6;--hot:#ff7a45;
+--c1:#2f7cf6;--c2:#14b8a6;--c3:#a855f7;--c4:#f59e0b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1620;--card:#18222f;--text:#eaf0f7;--muted:#97a6ba;--line:#2a3646}}
+:root[data-theme="dark"]{--bg:#0f1620;--card:#18222f;--text:#eaf0f7;--muted:#97a6ba;--line:#2a3646}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 48px}
+header{text-align:center;padding:12px 0 8px}
+h1{margin:0;font-size:clamp(26px,6vw,38px)}
+header p{color:var(--muted);margin:6px 0 0}
+.now{margin:22px 0;padding:18px;border-radius:18px;background:linear-gradient(135deg,var(--accent),#7c5cff);color:#fff;text-align:center}
+.now small{opacity:.85;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.now b{display:block;font-size:28px;margin-top:2px}
+h2{font-size:20px;margin:30px 0 12px}
+.tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.task{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.task .ic{font-size:30px}
+.task h3{margin:6px 0 8px;font-size:17px}
+.task ul{margin:0;padding-left:0;list-style:none;color:var(--muted);font-size:15px}
+.task li{padding:3px 0}.task li:before{content:"✓ ";color:var(--c2);font-weight:700}
+.rot{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.p{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:16px;padding:16px;text-align:center;position:relative}
+.p .n{width:34px;height:34px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;margin:0 auto 8px;font-weight:700}
+.p h3{margin:0;font-size:19px}.p span{color:var(--muted);font-size:14px}
+.p.on{box-shadow:0 0 0 3px var(--c)}
+.p.on:after{content:"THIS WEEK";position:absolute;top:-11px;right:12px;background:var(--c);color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+tr:last-child td{border-bottom:0}
+tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:var(--c)}
+.note{margin-top:22px;padding:14px 16px;border-radius:14px;background:color-mix(in srgb,var(--hot) 12%,transparent);border:1px solid color-mix(in srgb,var(--hot) 40%,transparent);font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div style="font-size:44px">🧹🏠</div><h1>House Cleaning Schedule</h1><p>One person per week · 4 housemates · rotating</p></header>
+
+<div class="now"><small>On duty this week</small><b id="who">…</b><span id="range"></span></div>
+
+<h2>🧽 The duties (all week, by the person on duty)</h2>
+<div class="tasks">
+<div class="task"><div class="ic">🗑️</div><h3>Garbage</h3><ul><li>Empty the bins whenever they're full</li><li>Don't wait for the weekend</li></ul></div>
+<div class="task"><div class="ic">🍳</div><h3>Kitchen</h3><ul><li>Wipe the kitchen floor</li><li>Mop the kitchen floor</li></ul></div>
+<div class="task"><div class="ic">🚽</div><h3>Main Washroom</h3><ul><li>Clean the toilet</li><li>Wipe the floor</li><li>Mop the floor</li></ul></div>
+</div>
+
+<h2>🔄 Rotation order</h2>
+<div class="rot" id="rot"></div>
+
+<h2>📅 Upcoming weeks</h2>
+<div class="tw"><table><thead><tr><th>Week</th><th>Dates</th><th>Person</th></tr></thead><tbody id="rows"></tbody></table></div>
+
+<div class="note">💡 Tip: do a quick garbage check every day and mop the kitchen and washroom at least once mid-week so nothing piles up.</div>
+</div>
+<script>
+const people=[["Mohit","var(--c1)"],["Preetpal","var(--c2)"],["Maruful","var(--c3)"],["Ankit","var(--c4)"]];
+const start=new Date(2026,9,12); // Mon 12 Oct 2026 = Mohit's week
+const day=864e5, f=d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+const today=new Date(); today.setHours(0,0,0,0);
+let w=Math.floor((today-start)/(7*day)); if(w<0)w=0;
+const cur=w%4;
+document.getElementById("who").textContent=people[cur][0]+" 🧼";
+document.getElementById("range").textContent=f(new Date(+start+w*7*day))+" – "+f(new Date(+start+(w*7+6)*day));
+document.getElementById("rot").innerHTML=people.map((p,i)=>`<div class="p ${i==cur?"on":""}" style="--c:${p[1]}"><div class="n">${i+1}</div><h3>${p[0]}</h3><span>Week ${i+1} of 4</span></div>`).join("");
+let h="";for(let i=0;i<8;i++){const k=w+i,p=people[k%4],s=new Date(+start+k*7*day),e=new Date(+start+(k*7+6)*day);
+h+=`<tr class="${i==0?"cur":""}" style="--c:${p[1]}"><td>${i==0?"This week":"Week +"+i}</td><td>${f(s)} – ${f(e)}</td><td><span class="dot"></span>${p[0]}</td></tr>`}
+document.getElementById("rows").innerHTML=h;
+</script>
+</body>
+</html>
